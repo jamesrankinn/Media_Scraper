@@ -1,0 +1,14 @@
+Scraped_Media/
+
+# Python virtual env
+.venv/
+
+# macOS
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
