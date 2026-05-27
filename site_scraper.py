@@ -6,6 +6,7 @@ Async media scraper — Playwright rendering + deep extraction + aiohttp downloa
 import argparse
 import asyncio
 import hashlib
+import json
 import logging
 import os
 import re
@@ -404,6 +405,25 @@ async def enhance_all(output_dir: Path, log: logging.Logger) -> None:
             log.info(f"Videos: {sum(vid_results)}/{len(videos)} re-encoded")
 
 
+# ── Manifest ──────────────────────────────────────────────────────────────────
+
+MANIFEST_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".svg", ".gif", ".avif"}
+
+
+def generate_image_manifest(output_dir: Path, log: logging.Logger) -> str:
+    """Scan output_dir recursively, write manifest.json, return the JSON string."""
+    manifest = [
+        str(f.relative_to(output_dir))
+        for f in sorted(output_dir.rglob("*"))
+        if f.is_file() and f.suffix.lower() in MANIFEST_EXTS
+    ]
+    manifest_json = json.dumps(manifest, indent=2)
+    manifest_path = output_dir / "manifest.json"
+    manifest_path.write_text(manifest_json)
+    log.info(f"Manifest: {len(manifest)} image(s) → {manifest_path}")
+    return manifest_json
+
+
 # ── Orchestration ──────────────────────────────────────────────────────────────
 
 async def run(args: argparse.Namespace) -> None:
@@ -538,6 +558,11 @@ async def run(args: argparse.Namespace) -> None:
     if not args.no_enhance:
         console.rule("[bold magenta]Phase 3: Enhance & Convert[/bold magenta]")
         await enhance_all(output_dir, log)
+
+    # ── Phase 4: Generate image manifest ──────────────────────────────────────
+    console.rule("[bold cyan]Phase 4: Image Manifest[/bold cyan]")
+    manifest_json = generate_image_manifest(output_dir, log)
+    console.print(manifest_json)
 
     console.rule()
     console.print(
